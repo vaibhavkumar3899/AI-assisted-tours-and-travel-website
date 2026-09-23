@@ -1,0 +1,19 @@
+{
+  "name": "roamify-ai-travel-planner",
+  "version": "1.0.0",
+  "description": "AI-Assisted Tours and Travel Planner - Full Stack Application",
+  "scripts": {
+    "start": "python run.py",
+    "backend": "cd backend && python app.py",
+    "frontend": "cd frontend && npx serve -l 3000 ."
+  },
+  "keywords": [
+    "travel-planner",
+    "flask",
+    "ai-planner",
+    "leaflet",
+    "fullstack"
+  ],
+  "author": "",
+  "license": "MIT"
+}

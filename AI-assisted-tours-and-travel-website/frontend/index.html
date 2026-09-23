@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roamify AI - Agentic Tours & Travel Planner</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Core Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <canvas id="travel-particles"></canvas>
+    <div class="app-container">
+        <!-- Sidebar - Configurator -->
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="assets/logo.png" alt="Roamify Logo" class="brand-img-logo">
+                <div class="brand-text">
+                    <h1>Roamify <span class="badge">AI</span></h1>
+                    <p>Agentic Travel Planner</p>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h2><i class="fa-solid fa-sliders"></i> Plan Your Trip</h2>
+                
+                <div class="input-group">
+                    <label for="destination"><i class="fa-solid fa-map-pin"></i> Destination</label>
+                    <input type="text" id="destination" placeholder="e.g. Tokyo, Paris, Bali" value="Tokyo">
+                </div>
+
+                <div class="quick-chips">
+                    <span class="chip active" data-dest="Tokyo, Japan">Tokyo</span>
+                    <span class="chip" data-dest="Paris, France">Paris</span>
+                    <span class="chip" data-dest="Bali, Indonesia">Bali</span>
+                    <span class="chip" data-dest="Rome, Italy">Rome</span>
+                    <span class="chip" data-dest="New York, USA">New York</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group half">
+                        <label for="duration"><i class="fa-solid fa-calendar-days"></i> Days</label>
+                        <select id="duration">
+                            <option value="1">1 Day</option>
+                            <option value="2">2 Days</option>
+                            <option value="3">3 Days</option>
+                            <option value="4" selected>4 Days</option>
+                            <option value="5">5 Days</option>
+                            <option value="6">6 Days</option>
+                            <option value="7">7 Days</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group half">
+                        <label for="style"><i class="fa-solid fa-suitcase"></i> Style</label>
+                        <select id="style">
+                            <option value="Budget">Budget</option>
+                            <option value="Leisure" selected>Leisure</option>
+                            <option value="Adventure">Adventure</option>
+                            <option value="Cultural">Cultural</option>
+                            <option value="Luxury">Luxury</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Collapsible API Setting -->
+                <div class="accordion-item advanced-settings">
+                    <button class="accordion-trigger" id="advancedTrigger">
+                        <span><i class="fa-solid fa-key"></i> Advanced AI Settings</span>
+                        <i class="fa-solid fa-chevron-down arrow"></i>
+                    </button>
+                    <div class="accordion-content" id="advancedContent">
+                        <div class="input-group">
+                            <label for="api-key">Custom API Key (Optional)</label>
+                            <input type="password" id="api-key" placeholder="Enter API key...">
+                            <small class="helper-text">Leave blank to use the built-in local travel generator.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="generate-btn" class="btn primary-btn">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Itinerary
+                </button>
+            </div>
+
+            <!-- Saved Trips Panel -->
+            <div class="saved-trips-section">
+                <h2><i class="fa-solid fa-folder-open"></i> Saved Trips</h2>
+                <ul id="saved-trips-list" class="saved-trips-list">
+                    <li class="empty-message">No saved trips yet</li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <!-- Loading Backdrop / Generation Splash -->
+            <div id="agent-spinner" class="agent-splash-overlay hidden">
+                <div class="splash-box">
+                    <div class="spinner">
+                        <div class="double-bounce1"></div>
+                        <div class="double-bounce2"></div>
+                    </div>
+                    <h3>Generating Trip Plan</h3>
+                    <p>Fetching destination details, organizing schedule, and calculating expenses...</p>
+                    
+                    <!-- Live Console in Overlay -->
+                    <div class="agent-console-overlay">
+                        <div class="console-header">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                            <span class="title">Process Log</span>
+                        </div>
+                        <div id="overlay-console-logs" class="console-body">
+                            <!-- Injected logs during load -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header info -->
+            <header class="dashboard-header">
+                <div class="header-left">
+                    <h2 id="trip-title">Voyage Plan: Tokyo, Japan</h2>
+                    <p id="trip-subtitle"><span id="trip-days">4</span> Days • <span id="trip-style">Leisure</span> Trip</p>
+                </div>
+                <div class="header-right">
+                    <button id="save-trip-btn" class="btn secondary-btn" disabled>
+                        <i class="fa-solid fa-bookmark"></i> Save Current Trip
+                    </button>
+                </div>
+            </header>
+
+            <!-- Grid Layout -->
+            <div class="dashboard-grid">
+                
+                <!-- COLUMN 1: Agent Interface & Terminal -->
+                <div class="grid-col chat-col">
+                    <!-- Agent Console Panel -->
+                    <div class="panel console-panel">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-terminal text-primary"></i> Agent Execution Log</h3>
+                            <span class="badge console-status" id="console-status-badge">Idle</span>
+                        </div>
+                        <div class="panel-body">
+                            <div class="terminal-container">
+                                <div class="terminal-body" id="agent-terminal-logs">
+                                    <div class="terminal-line system-line">> System initialized. Awaiting user parameters.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Assistant Room -->
+                    <div class="panel chat-panel">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-robot text-primary"></i> AI Agent Assistant</h3>
+                        </div>
+                        <div class="panel-body chat-messages-container" id="chat-messages">
+                            <div class="message assistant">
+                                <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                                <div class="message-content">
+                                    <p>Hello! I am your AI Travel Agent. Choose a destination and let me generate a comprehensive travel layout using my specialized search and optimization tools. Or just chat with me about your preferences!</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" id="chat-user-input" placeholder="Ask to modify itinerary (e.g., 'Change Day 2 to art museums')...">
+                            <button id="chat-send-btn" class="btn icon-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMN 2: Map & Weather -->
+                <div class="grid-col map-col">
+                    <div class="panel map-panel">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-map-location-dot text-primary"></i> Interactive Route Map</h3>
+                            <div class="map-controls">
+                                <span class="map-helper">Click items in timeline to focus map</span>
+                            </div>
+                        </div>
+                        <div class="panel-body map-wrapper">
+                            <div id="map"></div>
+                        </div>
+                    </div>
+
+                    <!-- Weather Info Widget -->
+                    <div class="panel weather-panel">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-cloud-sun-rain text-primary"></i> Weather Guidance</h3>
+                        </div>
+                        <div class="panel-body weather-body">
+                            <div class="weather-brief">
+                                <i class="fa-solid fa-cloud-sun weather-main-icon"></i>
+                                <div>
+                                    <h4 id="weather-summary">Loading...</h4>
+                                    <p>Seasonal projections optimized for daily travel comfort.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMN 3: Itinerary Timeline & Utilities -->
+                <div class="grid-col itinerary-col">
+                    <div class="panel itinerary-panel">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-route text-primary"></i> Trip Schedule</h3>
+                            <div class="day-tabs" id="itinerary-day-tabs">
+                                <!-- Day selection tabs -->
+                            </div>
+                        </div>
+                        <div class="panel-body itinerary-body" id="itinerary-timeline">
+                            <!-- Timeline elements dynamic load -->
+                            <div class="empty-state">
+                                <i class="fa-solid fa-plane-arrival"></i>
+                                <p>Click "Generate Itinerary" to kick off the AI agent execution.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Packing & Budget Split Panel -->
+                    <div class="grid-row split-row">
+                        <!-- Checklist -->
+                        <div class="panel packing-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-list-check text-primary"></i> Packing Assistant</h3>
+                                <span class="checklist-progress" id="packing-progress">0/0</span>
+                            </div>
+                            <div class="panel-body">
+                                <ul class="packing-list" id="packing-checklist">
+                                    <li class="empty-message">No checklist loaded</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Budget Chart -->
+                        <div class="panel budget-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-chart-pie text-primary"></i> Cost Analysis</h3>
+                                <span class="budget-total" id="budget-total-text">$0</span>
+                            </div>
+                            <div class="panel-body budget-chart-container">
+                                <canvas id="budget-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Leaflet.js script -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Chart.js script -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Frontend Source Codes -->
+    <script src="js/map.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "roamify-travel-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for AI-Assisted Tours and Travel Planner",
+  "scripts": {
+    "start": "npx serve -l 3000 ."
+  },
+  "keywords": [
+    "travel",
+    "ai",
+    "itinerary",
+    "leaflet",
+    "chartjs"
+  ],
+  "author": "",
+  "license": "MIT"
+}
